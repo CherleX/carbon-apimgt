@@ -3,22 +3,107 @@ package org.wso2.carbon.apimgt.rest.api.admin;
 import org.wso2.carbon.apimgt.rest.api.admin.*;
 import org.wso2.carbon.apimgt.rest.api.admin.dto.*;
 
-import org.wso2.carbon.apimgt.rest.api.admin.dto.MediationListDTO;
+import org.wso2.msf4j.formparam.FormDataParam;
+import org.wso2.msf4j.formparam.FileInfo;
+import org.wso2.msf4j.Request;
+
+import org.wso2.carbon.apimgt.rest.api.admin.dto.CustomRuleDTO;
+import org.wso2.carbon.apimgt.rest.api.admin.dto.CustomRuleListDTO;
 import org.wso2.carbon.apimgt.rest.api.admin.dto.ErrorDTO;
-import org.wso2.carbon.apimgt.rest.api.admin.dto.MediationDTO;
+import org.wso2.carbon.apimgt.rest.api.admin.dto.TierDTO;
+import org.wso2.carbon.apimgt.rest.api.admin.dto.TierListDTO;
 
 import java.util.List;
+import org.wso2.carbon.apimgt.rest.api.admin.NotFoundException;
 
 import java.io.InputStream;
-import org.apache.cxf.jaxrs.ext.multipart.Attachment;
 
 import javax.ws.rs.core.Response;
+import javax.ws.rs.core.SecurityContext;
 
 public abstract class PoliciesApiService {
-    public abstract Response policiesMediationGet(Integer limit,Integer offset,String query,String accept,String ifNoneMatch);
-    public abstract Response policiesMediationMediationPolicyIdDelete(String mediationPolicyId,String ifMatch,String ifUnmodifiedSince);
-    public abstract Response policiesMediationMediationPolicyIdGet(String mediationPolicyId,String accept,String ifNoneMatch,String ifModifiedSince);
-    public abstract Response policiesMediationMediationPolicyIdPut(String mediationPolicyId,MediationDTO body,String contentType,String ifMatch,String ifUnmodifiedSince);
-    public abstract Response policiesMediationPost(MediationDTO body,String contentType,String ifMatch,String ifUnmodifiedSince);
+    public abstract Response policiesThrottlingAdvancedGet(String accept
+ ,String ifNoneMatch
+ ,String ifModifiedSince
+ , Request request) throws NotFoundException;
+    public abstract Response policiesThrottlingAdvancedPolicyIdDelete(String policyId
+ ,String ifMatch
+ ,String ifUnmodifiedSince
+ , Request request) throws NotFoundException;
+    public abstract Response policiesThrottlingAdvancedPolicyIdGet(String policyId
+ ,String ifNoneMatch
+ ,String ifModifiedSince
+ , Request request) throws NotFoundException;
+    public abstract Response policiesThrottlingAdvancedPolicyIdPut(String policyId
+ ,TierDTO body
+ ,String contentType
+ ,String ifMatch
+ ,String ifUnmodifiedSince
+ , Request request) throws NotFoundException;
+    public abstract Response policiesThrottlingAdvancedPost(TierDTO body
+ ,String contentType
+ , Request request) throws NotFoundException;
+    public abstract Response policiesThrottlingApplicationGet(String accept
+ ,String ifNoneMatch
+ ,String ifModifiedSince
+ , Request request) throws NotFoundException;
+    public abstract Response policiesThrottlingApplicationPolicyIdDelete(String policyId
+ ,String ifMatch
+ ,String ifUnmodifiedSince
+ , Request request) throws NotFoundException;
+    public abstract Response policiesThrottlingApplicationPolicyIdGet(String policyId
+ ,String ifNoneMatch
+ ,String ifModifiedSince
+ , Request request) throws NotFoundException;
+    public abstract Response policiesThrottlingApplicationPolicyIdPut(String policyId
+ ,TierDTO body
+ ,String contentType
+ ,String ifMatch
+ ,String ifUnmodifiedSince
+ , Request request) throws NotFoundException;
+    public abstract Response policiesThrottlingApplicationPost(TierDTO body
+ ,String contentType
+ , Request request) throws NotFoundException;
+    public abstract Response policiesThrottlingCustomGet(String accept
+ ,String ifNoneMatch
+ ,String ifModifiedSince
+ , Request request) throws NotFoundException;
+    public abstract Response policiesThrottlingCustomPost(CustomRuleDTO body
+ ,String contentType
+ , Request request) throws NotFoundException;
+    public abstract Response policiesThrottlingCustomRuleIdDelete(String ruleId
+ ,String ifMatch
+ ,String ifUnmodifiedSince
+ , Request request) throws NotFoundException;
+    public abstract Response policiesThrottlingCustomRuleIdGet(String ruleId
+ ,String ifNoneMatch
+ ,String ifModifiedSince
+ , Request request) throws NotFoundException;
+    public abstract Response policiesThrottlingCustomRuleIdPut(String ruleId
+ ,CustomRuleDTO body
+ ,String contentType
+ ,String ifMatch
+ ,String ifUnmodifiedSince
+ , Request request) throws NotFoundException;
+    public abstract Response policiesThrottlingSubscriptionGet(String accept
+ ,String ifNoneMatch
+ ,String ifModifiedSince
+ , Request request) throws NotFoundException;
+    public abstract Response policiesThrottlingSubscriptionPolicyIdDelete(String policyId
+ ,String ifMatch
+ ,String ifUnmodifiedSince
+ , Request request) throws NotFoundException;
+    public abstract Response policiesThrottlingSubscriptionPolicyIdGet(String policyId
+ ,String ifNoneMatch
+ ,String ifModifiedSince
+ , Request request) throws NotFoundException;
+    public abstract Response policiesThrottlingSubscriptionPolicyIdPut(String policyId
+ ,TierDTO body
+ ,String contentType
+ ,String ifMatch
+ ,String ifUnmodifiedSince
+ , Request request) throws NotFoundException;
+    public abstract Response policiesThrottlingSubscriptionPost(TierDTO body
+ ,String contentType
+ , Request request) throws NotFoundException;
 }
-

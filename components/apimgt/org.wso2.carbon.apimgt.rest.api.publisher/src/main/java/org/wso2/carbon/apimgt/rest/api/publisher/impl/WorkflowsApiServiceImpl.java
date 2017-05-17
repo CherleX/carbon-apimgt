@@ -1,114 +1,119 @@
-/*
- *
- *  Copyright (c) 2016, WSO2 Inc. (http://www.wso2.org) All Rights Reserved.
- *
- *  Licensed under the Apache License, Version 2.0 (the "License");
- *  you may not use this file except in compliance with the License.
- *  You may obtain a copy of the License at
- *
- *  http://www.apache.org/licenses/LICENSE-2.0
- *
- *  Unless required by applicable law or agreed to in writing, software
- *  distributed under the License is distributed on an "AS IS" BASIS,
- *  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
- *  See the License for the specific language governing permissions and
- *  limitations under the License.
- *
- */
-
 package org.wso2.carbon.apimgt.rest.api.publisher.impl;
 
-import org.wso2.carbon.apimgt.api.APIManagementException;
-import org.wso2.carbon.apimgt.impl.dao.ApiMgtDAO;
-import org.wso2.carbon.apimgt.impl.workflow.WorkflowExecutor;
-import org.wso2.carbon.apimgt.impl.workflow.WorkflowExecutorFactory;
-import org.wso2.carbon.apimgt.impl.workflow.WorkflowStatus;
-import org.wso2.carbon.apimgt.impl.workflow.WorkflowException;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+import org.wso2.carbon.apimgt.core.api.APIPublisher;
+import org.wso2.carbon.apimgt.core.api.WorkflowExecutor;
+import org.wso2.carbon.apimgt.core.api.WorkflowResponse;
+import org.wso2.carbon.apimgt.core.exception.APIManagementException;
+import org.wso2.carbon.apimgt.core.exception.APIMgtResourceNotFoundException;
+import org.wso2.carbon.apimgt.core.exception.ExceptionCodes;
+import org.wso2.carbon.apimgt.core.models.Workflow;
+import org.wso2.carbon.apimgt.core.models.WorkflowStatus;
+import org.wso2.carbon.apimgt.core.util.APIMgtConstants;
+import org.wso2.carbon.apimgt.core.workflow.WorkflowExecutorFactory;
+import org.wso2.carbon.apimgt.rest.api.common.dto.ErrorDTO;
+import org.wso2.carbon.apimgt.rest.api.common.util.RestApiUtil;
 import org.wso2.carbon.apimgt.rest.api.publisher.*;
 import org.wso2.carbon.apimgt.rest.api.publisher.dto.*;
-import org.wso2.carbon.apimgt.rest.api.publisher.dto.WorkflowDTO.*;
-import org.wso2.carbon.apimgt.rest.api.util.RestApiConstants;
-import org.wso2.carbon.apimgt.rest.api.util.utils.RestApiUtil;
-import org.wso2.carbon.apimgt.rest.api.publisher.dto.ErrorDTO;
-import org.wso2.carbon.apimgt.rest.api.publisher.dto.WorkflowDTO;
-import org.wso2.carbon.context.PrivilegedCarbonContext;
+import org.wso2.carbon.apimgt.rest.api.publisher.utils.MappingUtil;
+import org.wso2.carbon.apimgt.rest.api.publisher.utils.RestAPIPublisherUtil;
 
+import java.util.HashMap;
+import java.util.Map;
 
-
-import org.apache.commons.logging.Log;
-import org.apache.commons.logging.LogFactory;
-
-import java.util.Arrays;
+import org.wso2.carbon.apimgt.rest.api.publisher.NotFoundException;
 
 import javax.ws.rs.core.Response;
+import org.wso2.msf4j.Request;
 
 public class WorkflowsApiServiceImpl extends WorkflowsApiService {
+    private static final Logger log = LoggerFactory.getLogger(WorkflowsApiServiceImpl.class);
 
-    private static final Log log = LogFactory.getLog(WorkflowsApiService.class);
-
+    /**
+     * Workflow callback rest api to complete workflow task.
+     *
+     * @param workflowReferenceId workflow reference id
+     * @param body                WorkflowDTO object
+     * @param request             ms4j request object
+     * @return the DTO object representing the workflwow response as the response payload
+     * @throws NotFoundException When the particular resource does not exist in the system
+     */
     @Override
-    public Response workflowsUpdateWorkflowStatusPost(String workflowReferenceId, WorkflowDTO body) {
-
-        ApiMgtDAO apiMgtDAO = ApiMgtDAO.getInstance();
-
-        boolean isTenantFlowStarted = false;
-
+    public Response workflowsWorkflowReferenceIdPut(String workflowReferenceId, WorkflowDTO body, Request request)
+            throws NotFoundException {
+        String username = RestApiUtil.getLoggedInUsername();
         try {
-            if (workflowReferenceId != null) {
-                org.wso2.carbon.apimgt.impl.dto.WorkflowDTO workflowDTO = apiMgtDAO
-                        .retrieveWorkflow(workflowReferenceId);
-                if (workflowDTO == null) {
-                    RestApiUtil.handleResourceNotFoundError(RestApiConstants.RESOURCE_WORKFLOW, workflowReferenceId,
-                            log);
-                } else {
-                    String tenantDomain = workflowDTO.getTenantDomain();
-                    if (tenantDomain != null
-                            && !org.wso2.carbon.utils.multitenancy.MultitenantConstants.SUPER_TENANT_DOMAIN_NAME
-                                    .equals(tenantDomain)) {
-                        isTenantFlowStarted = true;
-                        PrivilegedCarbonContext.startTenantFlow();
-                        PrivilegedCarbonContext.getThreadLocalCarbonContext().setTenantDomain(tenantDomain, true);
-                    }
-                    if(body == null){
-                        RestApiUtil.handleBadRequest(
-                                "Request payload is missing", log);
-                    }
-                    
-                    if(body.getDescription() != null) {
-                        workflowDTO.setWorkflowDescription(body.getDescription());
-                    }
-                    
-                    if(body.getStatus() == null) {
-                        RestApiUtil.handleBadRequest(
-                                "Workflow status is not defined", log);
-                    } else {
-                        workflowDTO.setStatus(WorkflowStatus.valueOf(body.getStatus().toString()));
-                    }
-                    
-                    if(body.getAttributes() != null){
-                        workflowDTO.setAttributes(body.getAttributes());
-                    }
-                                               
-                    String workflowType = workflowDTO.getWorkflowType();
-                    WorkflowExecutor workflowExecutor = WorkflowExecutorFactory.getInstance()
-                            .getWorkflowExecutor(workflowType);
 
-                    workflowExecutor.complete(workflowDTO);
-                    return Response.ok().entity(body).build();
-                    
-                }                
+            APIPublisher apiPublisher = RestAPIPublisherUtil.getApiPublisher(username);
+            Workflow workflow = apiPublisher.retrieveWorkflow(workflowReferenceId);
+            if (workflow == null) {
+                String errorMessage = "Workflow entry not found for: " + workflowReferenceId;
+                APIMgtResourceNotFoundException e = new APIMgtResourceNotFoundException(errorMessage,
+                        ExceptionCodes.WORKFLOW_NOT_FOUND);
+                Map<String, String> paramList = new HashMap<>();
+                paramList.put(APIMgtConstants.ExceptionsConstants.WORKFLOW_REF_ID, workflowReferenceId);
+                ErrorDTO errorDTO = RestApiUtil.getErrorDTO(e.getErrorHandler(), paramList);
+                log.error(errorMessage, e);
+                return Response.status(e.getErrorHandler().getHttpStatusCode()).entity(errorDTO).build();
+            } else if (WorkflowStatus.APPROVED == workflow.getStatus()) {
+                String errorMessage = "Workflow is already in complete state";
+                APIMgtResourceNotFoundException e = new APIMgtResourceNotFoundException(errorMessage,
+                        ExceptionCodes.WORKFLOW_ALREADY_COMPLETED);
+                Map<String, String> paramList = new HashMap<>();
+                paramList.put(APIMgtConstants.ExceptionsConstants.WORKFLOW_REF_ID, workflowReferenceId);
+                ErrorDTO errorDTO = RestApiUtil.getErrorDTO(e.getErrorHandler(), paramList);
+                log.error(errorMessage, e);
+                return Response.status(e.getErrorHandler().getHttpStatusCode()).entity(errorDTO).build();
+            } else {
+                WorkflowExecutor workflowExecutor = WorkflowExecutorFactory.getInstance()
+                        .getWorkflowExecutor(workflow.getWorkflowType());
+
+                if (body == null) {
+                    RestApiUtil.handleBadRequest("Request payload is missing", log);
+                }
+
+                if (body.getDescription() != null) {
+                    workflow.setWorkflowDescription(body.getDescription());
+                }
+
+                if (body.getStatus() == null) {
+                    String errorMessage = "Workflow status is not defined";
+                    APIManagementException e = new APIManagementException(errorMessage,
+                            ExceptionCodes.WORKFLOW_STATE_MISSING);
+                    Map<String, String> paramList = new HashMap<>();
+                    paramList.put(APIMgtConstants.ExceptionsConstants.WORKFLOW_REF_ID, workflowReferenceId);
+                    ErrorDTO errorDTO = RestApiUtil.getErrorDTO(e.getErrorHandler(), paramList);
+                    log.error(errorMessage, e);
+                    return Response.status(e.getErrorHandler().getHttpStatusCode()).entity(errorDTO).build();
+                } else {
+                    workflow.setStatus(WorkflowStatus.valueOf(body.getStatus().toString()));
+                }
+
+                if (body.getAttributes() != null) {
+                    Map<String, String> existingAttributs = workflow.getAttributes();
+                    Map<String, String> newAttributes = body.getAttributes();
+                    if (existingAttributs == null) {
+                        workflow.setAttributes(newAttributes);
+                    } else {
+                        newAttributes.forEach(existingAttributs::putIfAbsent);
+                        workflow.setAttributes(existingAttributs);
+                    }
+                }
+
+                WorkflowResponse response = apiPublisher.completeWorkflow(workflowExecutor, workflow);
+                WorkflowResponseDTO workflowResponseDTO = MappingUtil.toWorkflowResponseDTO(response);
+                return Response.ok().entity(workflowResponseDTO).build();
             }
+
         } catch (APIManagementException e) {
-            String msg = "Error while resuming workflow " + workflowReferenceId;
-            RestApiUtil.handleInternalServerError(msg, e, log);
-        } catch (WorkflowException e) {
-            String msg = "Error while resuming workflow " + workflowReferenceId;
-            RestApiUtil.handleInternalServerError(msg, e, log);
-        } finally {
-            if (isTenantFlowStarted) {
-                PrivilegedCarbonContext.endTenantFlow();
-            }
+            String errorMessage = "Error while completing workflow for reference : " + workflowReferenceId + ". "
+                    + e.getMessage();
+            Map<String, String> paramList = new HashMap<>();
+            paramList.put(APIMgtConstants.ExceptionsConstants.WORKFLOW_REF_ID, workflowReferenceId);
+            ErrorDTO errorDTO = RestApiUtil.getErrorDTO(e.getErrorHandler(), paramList);
+            log.error(errorMessage, e);
+            return Response.status(e.getErrorHandler().getHttpStatusCode()).entity(errorDTO).build();
         }
-        return null;
     }
 }
